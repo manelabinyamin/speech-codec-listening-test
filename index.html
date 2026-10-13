@@ -142,10 +142,10 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-r
 /* ---------- configuration: fill in after setting up the Google Sheet (see README.md) ---------- */
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbx7fpRcpO9wZ_ps-Asrgf3hwNGX_P6hqvndA8EaF97bGLHd0ReGfkDrOaiwy6PQ3HkNPw/exec";
 const TOKEN = "7143ebefb2ce8da7b11d915401eaa793";
-const TEST_VERSION = "mushra-v2-2026-10";
+const TEST_VERSION = "mushra-v2-r2-2026-10";   // r2: 500 and 1000 bps only
 /* -------------------------------------------------------------------------------------------- */
 
-const RATES = [500, 1000, 1500];
+const RATES = [500, 1000];
 const LETTERS = "ABCDE";
 const LS_KEY = "speech-mushra-" + TEST_VERSION;
 const $ = id => document.getElementById(id);
