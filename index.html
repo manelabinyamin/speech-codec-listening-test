@@ -142,7 +142,7 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-r
 /* ---------- configuration: fill in after setting up the Google Sheet (see README.md) ---------- */
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbx7fpRcpO9wZ_ps-Asrgf3hwNGX_P6hqvndA8EaF97bGLHd0ReGfkDrOaiwy6PQ3HkNPw/exec";
 const TOKEN = "7143ebefb2ce8da7b11d915401eaa793";
-const TEST_VERSION = "mushra-v2-r2-2026-10";   // r2: 500 and 1000 bps only
+const TEST_VERSION = "mushra-v2-r3-2026-10";   // r2: 500 and 1000 bps only; r3: VRVQ at step 442k
 /* -------------------------------------------------------------------------------------------- */
 
 const RATES = [500, 1000];
@@ -167,7 +167,7 @@ async function loadTrial(t){
   const p=(async()=>{
     ensureCtx(); const out={};
     await Promise.all(Object.entries(it.f).map(async ([c,h])=>{
-      const r=await fetch("stim/"+h+".wav"); if(!r.ok) throw new Error("audio "+r.status);
+      const r=await fetch("stim/"+h+".wav?v="+TEST_VERSION);   // version in the URL: no stale cached audio if(!r.ok) throw new Error("audio "+r.status);
       out[c]=await ctx.decodeAudioData(await r.arrayBuffer());
     }));
     const ref=rms(out.ref); out.gain={};
@@ -330,7 +330,7 @@ document.addEventListener("keydown",e=>{ if($("trial").hidden||!ui) return;
   else if(/^[1-5]$/.test(e.key)&&+e.key<=ui.order.length){ playKey(+e.key-1); e.preventDefault(); }
   else if(e.key===" "){ halt(false); paint(); e.preventDefault(); } });
 (async function boot(){
-  try{ ITEMS=await (await fetch("items.json")).json(); }catch(e){ $("intro-note").textContent="The test files did not load. Please reload the page."; return; }
+  try{ ITEMS=await (await fetch("items.json?v="+TEST_VERSION)).json(); }catch(e){ $("intro-note").textContent="The test files did not load. Please reload the page."; return; }
   const p=load();
   if(p&&p.list&&p.answers&&!p.done){ S=p; S.pending=S.pending||[]; flush();
     if(S.idx>0&&S.idx<S.list.length){ $("resume").hidden=false; $("intro-note").textContent="You have rated "+S.idx+" trials in this browser. Resume, or press Start for a new session."; } }
