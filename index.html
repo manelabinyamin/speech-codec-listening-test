@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Speech Codec Listening Test</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#eef1f0; --panel:#fbfcfb; --ink:#16211f; --muted:#5d6b68; --line:#cfd8d5;
+  --accent:#b8620a; --accent-ink:#ffffff; --live:#0f7a6a; --warn:#a33a2a;
+  --band1:#dfe9e6; --band2:#e9efed;
+  --display:"Bricolage Grotesque","IBM Plex Sans",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root{
+  --bg:#101716; --panel:#182220; --ink:#e6eeeb; --muted:#93a39f; --line:#2c3b38;
+  --accent:#f0a04a; --accent-ink:#1b1206; --live:#4fd0b8; --warn:#f08a78;
+  --band1:#1e2b28; --band2:#1a2523; color-scheme:dark } }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:900px;margin:0 auto;padding-inline:16px;padding-block:28px 56px;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,5vw,36px);line-height:1.1;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0}
+h3{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+p{margin:0;max-width:66ch}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:66ch}
+label.field{display:flex;flex-direction:column;gap:4px;font-weight:500;max-width:320px}
+input[type=text]{font:inherit;padding:8px 10px;border-radius:4px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+label.check{display:flex;gap:10px;align-items:flex-start;max-width:66ch}
+button{font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:9px 14px;font-weight:500}
+button:hover:not(:disabled){border-color:var(--ink)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--ink);color:var(--panel);border-color:var(--ink);font-weight:600}
+button.primary:hover:not(:disabled){background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.prog{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--ink);width:0}
+.console-wrap{overflow-x:auto}
+.console{display:grid;gap:0 6px;align-items:stretch;min-width:min-content}
+.scale{display:grid;grid-template-rows:repeat(5,1fr);height:260px;font-size:11px;color:var(--muted);text-align:right;padding-right:6px}
+.scale div{display:flex;align-items:center;justify-content:flex-end;border-top:1px solid var(--line)}
+.scale div:last-child{border-bottom:1px solid var(--line)}
+.strip{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:56px}
+.strip .well{height:260px;width:100%;display:flex;justify-content:center;align-items:center;border-radius:4px;
+  background:repeating-linear-gradient(to bottom,var(--band1) 0 20%,var(--band2) 20% 40%)}
+.strip.ref .well{background:none;border:1px dashed var(--line);color:var(--muted);font-size:12px;text-align:center;padding:6px}
+.strip input[type=range]{writing-mode:vertical-lr;direction:rtl;height:244px;width:28px;accent-color:var(--accent);margin:0}
+.val{font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums;min-height:22px}
+.val.unset{color:var(--muted)}
+.play{width:100%;padding:10px 4px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1}
+.play small{font-weight:400;font-size:11px;color:var(--muted)}
+.play.on{background:var(--live);border-color:var(--live);color:var(--panel)}
+.play.on small{color:inherit}
+.play .dot{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.play.heard .dot{background:var(--live)}
+.play.on .dot{background:var(--panel)}
+.seek{height:22px;background:var(--band1);border-radius:3px;position:relative;cursor:ew-resize;overflow:hidden;touch-action:none;user-select:none}
+.seek i{position:absolute;inset:0 auto 0 0;background:var(--accent);opacity:.85;width:0;border-right:3px solid var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg label{cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;padding:8px 14px;font-weight:500}
+.seg input:checked+span{background:var(--ink);color:var(--panel)}
+.note{font-size:13px;color:var(--muted)}
+.note.warn{color:var(--warn)}
+.note.ok{color:var(--live)}
+kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:3px;padding:0 5px;background:var(--panel)}
+.code{font-family:var(--mono);font-size:18px;letter-spacing:.06em}
+@media (max-width:520px){ .panel{padding:14px} .scale{font-size:10px} }
+@media (prefers-reduced-motion:no-preference){ .prog i{transition:width .12s linear} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="stack">
+    <h3>Listening test · speech at very low bitrates · as long as you like</h3>
+    <h1>Speech codec listening test</h1>
+  </header>
+
+  <section class="panel" id="intro">
+    <h2>Before you start</h2>
+    <ol>
+      <li>You will hear short sentences (5 seconds) coded by different speech codecs, and rate how close each version sounds to the original.</li>
+      <li>In each trial, play the <b>Reference</b>, then each unlabelled version. Rate each one from 0 (bad) to 100 (excellent, indistinguishable from the reference).</li>
+      <li>One version in every trial <b>is</b> the reference itself: give it 100. One is deliberately very poor.</li>
+      <li>In <b>Loop</b> mode, switching between versions keeps the playback position, so you can compare the same words. You can drag the bar to move within the excerpt.</li>
+      <li>Each trial takes about half a minute. Do as many as you like and press <b>Stop here</b> whenever you want to end; every trial you finish is saved as soon as you move on.</li>
+    </ol>
+    <p class="note">Please use headphones in a quiet room. Set a comfortable volume on the reference in the first trial and do not change it afterwards.</p>
+    <div class="stack">
+      <label class="check" for="consent"><input type="checkbox" id="consent">
+        <span>I agree that my ratings and basic browser information are stored anonymously, under a random session number, and used for research. No personal data is collected.</span></label>
+    </div>
+    <div class="row">
+      <button class="primary" id="start" disabled>Start</button>
+      <button id="resume" hidden>Resume where I stopped</button>
+      <span class="note" id="intro-note"></span>
+    </div>
+  </section>
+
+  <section class="panel" id="trial" hidden>
+    <div class="head">
+      <h2 id="t-title">Trial 1</h2>
+      <span class="note" id="t-status">loading audio…</span>
+    </div>
+    <div class="prog"><i id="t-prog"></i></div>
+    <div class="console-wrap"><div class="console" id="console"></div></div>
+    <div class="stack">
+      <div class="seek" id="seek" title="Drag to move within the excerpt"><i id="seek-fill"></i></div>
+      <div class="row">
+        <button id="stop">Stop</button>
+        <div class="seg" role="radiogroup" aria-label="Playback mode"><label><input type="radio" name="mode" id="mode-loop" checked><span>Loop</span></label><label><input type="radio" name="mode" id="mode-once"><span>Once</span></label></div>
+        <span class="note"><kbd>R</kbd> reference · <kbd>1</kbd>–<kbd>5</kbd> versions · <kbd>Space</kbd> stop</span>
+      </div>
+    </div>
+    <div class="row" style="justify-content:space-between">
+      <div class="stack" style="gap:4px"><span class="note" id="t-hint"></span><span class="note" id="send-status"></span></div>
+      <div class="row"><button id="quit">Stop here</button><button class="primary" id="next" disabled>Save and next</button></div>
+    </div>
+  </section>
+
+  <section class="panel" id="done" hidden>
+    <h2>Thank you</h2>
+    <p id="done-msg">Sending your answers…</p>
+    <p class="note" id="done-count"></p>
+    <div class="row" id="fallback" hidden>
+      <button id="retry">Try sending again</button>
+      <button id="download">Download my answers</button>
+    </div>
+    <p class="note" id="fallback-note" hidden>If sending keeps failing, download the file and email it to the person who sent you this test.</p>
+  </section>
+</div>
+
+<script>
+"use strict";
+/* ---------- configuration: fill in after setting up the Google Sheet (see README.md) ---------- */
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbx7fpRcpO9wZ_ps-Asrgf3hwNGX_P6hqvndA8EaF97bGLHd0ReGfkDrOaiwy6PQ3HkNPw/exec";
+const TOKEN = "7143ebefb2ce8da7b11d915401eaa793";
+const TEST_VERSION = "mushra-v2-2026-10";
+/* -------------------------------------------------------------------------------------------- */
+
+const RATES = [500, 1000, 1500];
+const LETTERS = "ABCDE";
+const LS_KEY = "speech-mushra-" + TEST_VERSION;
+const $ = id => document.getElementById(id);
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const rid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2));
+
+let ITEMS = null, S = null, ui = null;
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+function load(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){ return null; } }
+
+/* ---------------- audio ---------------- */
+let ctx=null, master=null, cache=new Map(), cur=null;
+function ensureCtx(){ if(!ctx){ ctx=new (window.AudioContext||window.webkitAudioContext)(); master=ctx.createGain(); master.connect(ctx.destination);} if(ctx.state==="suspended") ctx.resume(); }
+function rms(b){ const d=b.getChannelData(0); let s=0; for(let i=0;i<d.length;i++) s+=d[i]*d[i]; return Math.sqrt(s/d.length)||1e-9; }
+function itemOf(t){ return ITEMS[t.item]; }
+async function loadTrial(t){
+  const key=t.item; if(cache.has(key)) return cache.get(key);
+  const it=itemOf(t);
+  const p=(async()=>{
+    ensureCtx(); const out={};
+    await Promise.all(Object.entries(it.f).map(async ([c,h])=>{
+      const r=await fetch("stim/"+h+".wav"); if(!r.ok) throw new Error("audio "+r.status);
+      out[c]=await ctx.decodeAudioData(await r.arrayBuffer());
+    }));
+    const ref=rms(out.ref); out.gain={};
+    for(const c of Object.keys(it.f)) out.gain[c]=Math.min(1.26,Math.max(0.79,ref/rms(out[c])));   // level match, +-2 dB
+    return out;
+  })();
+  cache.set(key,p); p.catch(()=>cache.delete(key)); return p;
+}
+function pos(){ if(!cur) return ui?ui.offset:0; return Math.min(cur.buf.duration, cur.offset+(ctx.currentTime-cur.startedAt)); }
+function halt(keep){
+  if(cur){ const c=cur; cur=null; if(ui) ui.offset=keep?Math.min(c.buf.duration,c.offset+(ctx.currentTime-c.startedAt)):0;
+    c.src.onended=null; const t=ctx.currentTime; c.gain.gain.setValueAtTime(c.gain.gain.value,t); c.gain.gain.linearRampToValueAtTime(0,t+0.02); try{c.src.stop(t+0.03);}catch(e){} }
+  else if(ui&&!keep) ui.offset=0;
+}
+function playKey(key){
+  if(!ui||!ui.audio) return; ensureCtx();
+  if($("mode-once").checked){ halt(false); startAt(key,0); return; }
+  if(cur&&cur.key===key){ halt(true); paint(); return; }
+  halt(true); startAt(key, ui.offset>=ui.audio.ref.duration-0.05?0:ui.offset);
+}
+function startAt(key, offset){
+  const cond = key==="REF"?"ref":ui.order[key];
+  const buf=ui.audio[cond], src=ctx.createBufferSource(), g=ctx.createGain(); src.buffer=buf;
+  const t=ctx.currentTime; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(ui.audio.gain[cond],t+0.02);
+  src.connect(g); g.connect(master); src.start(t, offset);
+  cur={key,src,gain:g,buf,startedAt:t,offset}; ui.last=key;
+  src.onended=()=>{ if(!cur||cur.src!==src) return; cur=null; ui.offset=0; if($("mode-loop").checked) startAt(key,0); paint(); };
+  if(key==="REF") ui.heardRef=true; else ui.heard[key]=true;
+  paint();
+}
+/* ---------------- trial ---------------- */
+function buildConsole(n){
+  const el=$("console"); el.innerHTML=""; el.style.gridTemplateColumns="auto repeat("+(n+1)+",minmax(56px,1fr))";
+  const sc=document.createElement("div"); sc.innerHTML='<div style="height:54px"></div><div class="scale"><div>Excellent</div><div>Good</div><div>Fair</div><div>Poor</div><div>Bad</div></div>';
+  el.appendChild(sc);
+  const mk=(key,label,sub)=>{
+    const s=document.createElement("div"); s.className="strip"+(key==="REF"?" ref":"");
+    const b=document.createElement("button"); b.className="play"; b.id="play-"+key; b.type="button";
+    b.innerHTML='<span>'+label+'</span><small>'+sub+'</small><span class="dot"></span>'; b.onclick=()=>playKey(key);
+    s.appendChild(b);
+    const w=document.createElement("div"); w.className="well";
+    if(key==="REF"){ w.textContent="original"; s.appendChild(w); s.appendChild(Object.assign(document.createElement("div"),{className:"val"})); }
+    else{
+      const r=document.createElement("input"); r.type="range"; r.min=0; r.max=100; r.step=1; r.value=0; r.id="fader-"+key; r.setAttribute("aria-label","Score for version "+label);
+      const v=document.createElement("div"); v.className="val unset"; v.textContent="–";
+      const touch=()=>{ ui.touched[key]=true; ui.scores[key]=+r.value; v.textContent=r.value; v.classList.remove("unset"); paint(); };
+      r.addEventListener("input",touch); r.addEventListener("pointerdown",touch); r.addEventListener("keydown",e=>{ if(e.key.startsWith("Arrow")) setTimeout(touch,0); });
+      w.appendChild(r); s.appendChild(w); s.appendChild(v);
+    }
+    el.appendChild(s);
+  };
+  mk("REF","Ref","key R");
+  for(let i=0;i<n;i++) mk(i,LETTERS[i],"key "+(i+1));
+}
+function paint(){
+  if(!ui) return; const n=ui.order.length, idx=[...Array(n).keys()];
+  for(const k of ["REF",...idx]){ const b=$("play-"+k); if(!b) continue; b.classList.toggle("on",!!cur&&cur.key===k); if(k!=="REF") b.classList.toggle("heard",!!ui.heard[k]); }
+  const ready=idx.every(i=>ui.heard[i]&&ui.touched[i]);
+  $("next").disabled=!ready||!ui.audio;
+  const hint=$("t-hint"); hint.classList.remove("warn");
+  if(!ready){ const h=idx.filter(i=>!ui.heard[i]).map(i=>LETTERS[i]), t=idx.filter(i=>!ui.touched[i]).map(i=>LETTERS[i]);
+    hint.textContent=(h.length?"Not played yet: "+h.join(", ")+". ":"")+(t.length?"Not rated yet: "+t.join(", ")+".":""); }
+  else if(Math.max(...ui.scores)<90){ hint.textContent="One version is the reference itself. None is rated 90 or above yet."; hint.classList.add("warn"); }
+  else hint.textContent="All rated. Adjust if you like, then continue.";
+}
+function tick(){ if(ui&&ui.audio){ $("seek-fill").style.width=(100*pos()/ui.audio.ref.duration).toFixed(1)+"%"; } requestAnimationFrame(tick); }
+async function showTrial(){
+  halt(false);
+  const t=S.list[S.idx], n=t.order.length;
+  ui={item:t.item, order:t.order, heard:Array(n).fill(false), heardRef:false, touched:Array(n).fill(false), scores:Array(n).fill(0), offset:0, audio:null, t0:Date.now()};
+  $("t-title").textContent="Trial "+(S.idx+1)+" · "+S.idx+" done, "+(S.list.length-S.idx)+" left";
+  $("t-prog").style.width=(100*S.idx/S.list.length)+"%";
+  $("next").textContent=S.idx===S.list.length-1?"Save and finish":"Save and next";
+  $("t-status").textContent="loading audio…";
+  buildConsole(n); paint();
+  try{
+    const a=await loadTrial(t); if(!ui||ui.item!==t.item) return;
+    ui.audio=a; $("t-status").textContent=""; paint();
+    if(S.idx+1<S.list.length) loadTrial(S.list[S.idx+1]).catch(()=>{});
+  }catch(e){ $("t-status").textContent="The audio did not load. Check your connection and reload the page; your progress is kept."; }
+}
+function commitTrial(){
+  const it=ITEMS[ui.item];
+  S.answers.push({trial:S.idx+1, rate:it.rate, utterance:it.utt, order:ui.order.join(" "),
+    scores:Object.fromEntries(ui.order.map((c,i)=>[c,ui.scores[i]])), heard_reference:ui.heardRef,
+    seconds:Math.round((Date.now()-ui.t0)/1000)});
+  S.pending.push(S.answers[S.answers.length-1]);
+  S.idx++; save(); flush();
+  if(S.idx>=S.list.length){ halt(false); ui=null; finish(); } else showTrial();
+}
+function begin(){
+  // every sentence once, the rates interleaved round by round, so stopping early still leaves a
+  // balanced set: each round holds one sentence of each rate in random order
+  const pools=RATES.map(r=>shuffle(ITEMS.map((it,i)=>i).filter(i=>ITEMS[i].rate===r)));
+  const order=[]; for(let k=0;pools.some(p=>k<p.length);k++) order.push(...shuffle(pools.filter(p=>k<p.length).map(p=>p[k])));
+  S={session:rid(), version:TEST_VERSION, started:new Date().toISOString(),
+     list:order.map(i=>({item:i, order:shuffle(Object.keys(ITEMS[i].f))})),
+     idx:0, answers:[], pending:[], done:false};
+  save(); $("intro").hidden=true; $("trial").hidden=false; showTrial();
+}
+/* ---------------- submission: every trial is sent as soon as it is rated ---------------- */
+let sending=false, lastError="";
+function body(answers){
+  return JSON.stringify({token:TOKEN, version:S.version, session:S.session, started:S.started,
+    user_agent:navigator.userAgent.slice(0,200), screen:(window.screen?screen.width+"x"+screen.height:""), answers});
+}
+async function flush(){
+  if(sending||!S||!S.pending.length) return true;
+  if(!ENDPOINT.startsWith("https://")){ lastError="the page has no results address configured (ENDPOINT)"; showSend(); return false; }
+  sending=true; const batch=S.pending.slice();
+  try{
+    // text/plain avoids a CORS preflight, which Apps Script web apps do not answer
+    const r=await fetch(ENDPOINT,{method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:body(batch), keepalive:true});
+    const txt=await r.text();
+    if(!r.ok||!/^ok/.test(txt)) throw new Error(txt.slice(0,80)||("HTTP "+r.status));
+    S.pending=S.pending.filter(a=>!batch.includes(a)); save(); lastError=""; showSend(); return true;
+  }catch(e){ lastError=(e&&e.message)||String(e); showSend(); return false; }
+  finally{ sending=false; }
+}
+// one line under the trial controls: whether the answers so far reached the results sheet
+function showSend(){
+  const el=$("send-status"); if(!el||!S) return;
+  if(S.pending.length){ el.textContent=S.pending.length+" answer"+(S.pending.length>1?"s":"")+" not sent yet"+(lastError?" ("+lastError+")":"")+"; retrying after the next trial."; el.className="note warn"; }
+  else if(S.answers.length){ el.textContent="All "+S.answers.length+" answers saved."; el.className="note ok"; }
+  else el.textContent="";
+}
+async function finish(){
+  halt(false); ui=null; S.done=true; save();
+  $("trial").hidden=true; $("intro").hidden=true; $("done").hidden=false; window.scrollTo(0,0);
+  $("done-count").textContent="You rated "+S.answers.length+" trial"+(S.answers.length===1?"":"s")+". Session "+S.session.slice(0,8)+".";
+  $("done-msg").textContent="Sending your answers…"; $("fallback").hidden=true; $("fallback-note").hidden=true;
+  for(let k=0;k<3&&S.pending.length;k++){ await flush(); if(S.pending.length) await new Promise(r=>setTimeout(r,1500)); }
+  if(!S.pending.length){ $("done-msg").textContent="All your answers were received. Thank you for taking part; you can close this page."; $("done-msg").className="ok"; }
+  else{ $("done-msg").textContent=S.pending.length+" of your answers could not be sent"+(lastError?" ("+lastError+")":"")+"."; $("fallback").hidden=false; $("fallback-note").hidden=false; }
+}
+function download(){
+  const blob=new Blob([body(S.answers)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="listening-test-"+S.session.slice(0,8)+".json";
+  document.body.appendChild(a); a.click(); a.remove();
+}
+/* ---------------- wiring ---------------- */
+const canStart=()=>{ $("start").disabled=!(ITEMS&&$("consent").checked); };
+$("consent").addEventListener("change",canStart);
+$("start").onclick=()=>{ ensureCtx(); begin(); };
+$("resume").onclick=()=>{ ensureCtx(); $("intro").hidden=true; $("trial").hidden=false; showTrial(); };
+$("next").onclick=commitTrial;
+$("stop").onclick=()=>{ halt(false); paint(); };
+$("retry").onclick=finish; $("download").onclick=download;
+$("quit").onclick=()=>finish();
+window.addEventListener("pagehide",()=>{ if(S&&S.pending.length) flush(); });
+let drag=null;
+const seekTo=e=>{ const r=$("seek").getBoundingClientRect(); ui.offset=Math.max(0,Math.min(0.995,(e.clientX-r.left)/r.width))*ui.audio.ref.duration; };
+$("seek").addEventListener("pointerdown",e=>{ if(!ui||!ui.audio) return; e.preventDefault(); ensureCtx(); drag={key:cur?cur.key:(ui.last??null)}; halt(true); seekTo(e); try{ $("seek").setPointerCapture(e.pointerId); }catch(_){} paint(); });
+$("seek").addEventListener("pointermove",e=>{ if(drag&&ui&&ui.audio) seekTo(e); });
+const endDrag=()=>{ if(!drag) return; const k=drag.key; drag=null; if(ui&&ui.audio&&k!==null&&k!==undefined) startAt(k,ui.offset); };
+$("seek").addEventListener("pointerup",endDrag); $("seek").addEventListener("pointercancel",endDrag);
+document.addEventListener("keydown",e=>{ if($("trial").hidden||!ui) return;
+  if(e.key==="r"||e.key==="R"){ playKey("REF"); e.preventDefault(); }
+  else if(/^[1-5]$/.test(e.key)&&+e.key<=ui.order.length){ playKey(+e.key-1); e.preventDefault(); }
+  else if(e.key===" "){ halt(false); paint(); e.preventDefault(); } });
+(async function boot(){
+  try{ ITEMS=await (await fetch("items.json")).json(); }catch(e){ $("intro-note").textContent="The test files did not load. Please reload the page."; return; }
+  const p=load();
+  if(p&&p.list&&p.answers&&!p.done){ S=p; S.pending=S.pending||[]; flush();
+    if(S.idx>0&&S.idx<S.list.length){ $("resume").hidden=false; $("intro-note").textContent="You have rated "+S.idx+" trials in this browser. Resume, or press Start for a new session."; } }
+  canStart(); requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
