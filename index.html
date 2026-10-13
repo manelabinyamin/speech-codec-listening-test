@@ -133,7 +133,7 @@ kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-r
       <button id="retry">Try sending again</button>
       <button id="download">Download my answers</button>
     </div>
-    <p class="note" id="fallback-note" hidden>If sending keeps failing, download the file and email it to the person who sent you this test.</p>
+    <p class="note" id="fallback-note" hidden>If sending keeps failing, download the file (it holds only the answers that were not sent) and email it to the person who sent you this test.</p>
   </section>
 </div>
 
@@ -304,8 +304,9 @@ async function finish(){
   else{ $("done-msg").textContent=S.pending.length+" of your answers could not be sent"+(lastError?" ("+lastError+")":"")+"."; $("fallback").hidden=false; $("fallback-note").hidden=false; }
 }
 function download(){
-  const blob=new Blob([body(S.answers)],{type:"application/json"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="listening-test-"+S.session.slice(0,8)+".json";
+  // only the answers the sheet has not acknowledged, so a file appended by hand cannot duplicate rows
+  const blob=new Blob([body(S.pending)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="listening-test-"+S.session.slice(0,8)+"-unsent.json";
   document.body.appendChild(a); a.click(); a.remove();
 }
 /* ---------------- wiring ---------------- */
